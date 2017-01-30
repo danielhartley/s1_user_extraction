@@ -26,7 +26,7 @@ module S1UserExtraction
     end
 
     def get_has_many(model)
-      model.reflect_on_all_associations(:has_many)#.map {|assoc| Association.new(assoc)}
+      model.reflect_on_all_associations(:has_many).map {|assoc| Association.new(assoc)}
     end
 
     def get_belongs_to(model)
@@ -34,7 +34,7 @@ module S1UserExtraction
     end
 
     def get_has_one(model)
-      model.reflect_on_all_associations(:has_one)#.map {|assoc| Association.new(assoc)}
+      model.reflect_on_all_associations(:has_one).map {|assoc| Association.new(assoc)}
     end
 
   end
