@@ -1,40 +1,29 @@
 require "s1_user_extraction/version"
-require "s1_user_extraction/association"
-require "s1_user_extraction/sql_builder/builder"
-require "s1_user_extraction/sql_builder/belongs_to"
+require "s1_user_extraction/association_finder"
 require 'pry-byebug'
 
 module S1UserExtraction
   class App
 
     def initialize
-      @associations = {}
+      @finder = S1UserExtraction::AssociationFinder.new
+      @models_covered = [AsyncHandlerQueueItem]
     end
 
-    def build_script(model)
-      get_belongs_to(model).each do |assoc|
-        @associations[assoc.get_class] ||= []
-        @associations[assoc.get_class].push(SQLBuilder::BelongsTo.new(model.table_name, assoc.name+'_id', model.name))
+    def find_associations(models)
+      current_associations = {}
+      models.reject{|model| @models_covered.include? model}.each do |model|
+        current_associations = merge_array_hash(current_associations, @finder.find_associations(model))
       end
-
-      get_has_many(model).each do |assoc|
-        @associations[assoc.get_class] ||= []
-        @associations[assoc.get_class].push(SQLBuilder::HasMany.new(assoc.table_name, model.name.downcase+'_id', model.name))
+      @models_covered = @models_covered | models
+      if current_associations.keys.size > 0
+        current_associations = merge_array_hash(current_associations, find_associations(current_associations.keys))
       end
-
-      @associations
+      current_associations
     end
 
-    def get_has_many(model)
-      model.reflect_on_all_associations(:has_many).map {|assoc| Association.new(assoc)}
-    end
-
-    def get_belongs_to(model)
-      model.reflect_on_all_associations(:belongs_to).map {|assoc| Association.new(assoc)}
-    end
-
-    def get_has_one(model)
-      model.reflect_on_all_associations(:has_one).map {|assoc| Association.new(assoc)}
+    def merge_array_hash(first_hash, second_hash)
+      first_hash.merge(second_hash) { |key, oldval, newval| oldval | newval }
     end
 
   end
